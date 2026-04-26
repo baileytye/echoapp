@@ -5,9 +5,11 @@ import androidx.lifecycle.viewModelScope
 import com.example.echoapplication.domain.EchoResult
 import com.example.echoapplication.domain.SubmitUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -17,7 +19,10 @@ data class EchoUiState(
     val outputText: String? = null,
     val errorMessage: String? = null,
     val isLoading: Boolean = false
-)
+) {
+    val hasResult: Boolean
+        get() = outputText != null || errorMessage != null
+}
 
 @HiltViewModel
 class EchoViewModel @Inject constructor(
@@ -27,11 +32,15 @@ class EchoViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(EchoUiState())
     val uiState: StateFlow<EchoUiState> = _uiState.asStateFlow()
 
+    private val navigationChannel = Channel<NavigationEvent>()
+    val navigationEvents = navigationChannel.receiveAsFlow()
+
     fun onTextChanged(text: String) {
         _uiState.update {
             it.copy(
                 inputText = text,
-                errorMessage = null
+                errorMessage = null,
+                outputText = null
             )
         }
     }
@@ -69,6 +78,18 @@ class EchoViewModel @Inject constructor(
                     }
                 }
             }
+
+            navigationChannel.send(NavigationEvent.NavigateToResult)
+        }
+    }
+
+    fun onReturnToInputClicked() {
+        _uiState.update {
+            it.copy(
+                isLoading = false,
+                outputText = null,
+                errorMessage = null
+            )
         }
     }
 }

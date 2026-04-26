@@ -7,9 +7,12 @@ import okhttp3.Response
 import okhttp3.ResponseBody.Companion.toResponseBody
 import okio.Buffer
 import org.json.JSONObject
+import java.util.concurrent.atomic.AtomicInteger
 import javax.inject.Inject
 
 class FakeServerInterceptor @Inject constructor() : Interceptor {
+
+    private val validRequestCounter = AtomicInteger(0) // Prevents race condition and happens instantaneusly
 
     override fun intercept(chain: Interceptor.Chain): Response {
         val request = chain.request()
@@ -19,25 +22,30 @@ class FakeServerInterceptor @Inject constructor() : Interceptor {
             request.body?.writeTo(buffer)
 
             val body = buffer.readUtf8()
-            val text = JSONObject(body).optString("text")
+            val text = JSONObject(body).optString("text").trim()
 
-            val isValid = text.isNotBlank() &&
-                    !text.contains("fail", ignoreCase = true) &&
-                    !text.contains("error", ignoreCase = true)
+            val isBlank = text.isBlank()
 
-            val responseCode = if (isValid) 200 else 400
+            val shouldSucceed = if (isBlank) {
+                false
+            } else {
+                val requestNumber = validRequestCounter.incrementAndGet()
+                requestNumber % 2 == 1
+            }
 
-            val responseJson = if (isValid) {
+            val responseCode = if (shouldSucceed) 200 else 400
+
+            val responseJson = if (shouldSucceed) {
                 """{"echoedText":${JSONObject.quote(text)}}"""
             } else {
-                """{"message":"Server validation failed. Please enter valid text."}"""
+                """{"message":"Fake server rejected this request."}"""
             }
 
             return Response.Builder()
                 .request(request)
                 .protocol(Protocol.HTTP_1_1)
                 .code(responseCode)
-                .message(if (isValid) "OK" else "Bad Request")
+                .message(if (shouldSucceed) "OK" else "Bad Request")
                 .body(responseJson.toResponseBody("application/json".toMediaType()))
                 .build()
         }

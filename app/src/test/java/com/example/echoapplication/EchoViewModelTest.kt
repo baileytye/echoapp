@@ -4,11 +4,16 @@ import com.example.echoapplication.domain.EchoRepository
 import com.example.echoapplication.domain.EchoResult
 import com.example.echoapplication.domain.SubmitUseCase
 import com.example.echoapplication.presentation.EchoViewModel
+import com.example.echoapplication.presentation.NavigationEvent
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Rule
 import org.junit.Test
@@ -20,39 +25,52 @@ class EchoViewModelTest {
     val mainDispatcherRule = MainDispatcherRule()
 
     @Test
-    fun `submit success shows echoed text`() = runTest {
+    fun `submit success shows output and navigates to result`() = runTest {
         val repository = FakeEchoRepository(
-            result = EchoResult.Success("Text input")
+            result = EchoResult.Success("Hello world")
         )
 
         val viewModel = EchoViewModel(
             submitEchoUseCase = SubmitUseCase(repository)
         )
 
-        viewModel.onTextChanged("Text input")
+        val events = mutableListOf<NavigationEvent>()
+
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.navigationEvents.toList(events)
+        }
+
+        viewModel.onTextChanged(" Hello world ")
         viewModel.onSubmitClicked()
 
         advanceUntilIdle()
 
         val state = viewModel.uiState.value
 
-        assertEquals("Text input", state.outputText)
+        assertEquals("Hello world", state.outputText)
         assertNull(state.errorMessage)
         assertFalse(state.isLoading)
-        assertEquals("Text input", repository.submittedText)
+        assertEquals("Hello world", repository.submittedText)
+        assertEquals(listOf(NavigationEvent.NavigateToResult), events)
     }
 
     @Test
-    fun `submit failure shows error message`() = runTest {
+    fun `submit failure shows error and navigates to result`() = runTest {
         val repository = FakeEchoRepository(
-            result = EchoResult.Error("Server validation failed. Please enter valid text.")
+            result = EchoResult.Error("Fake server rejected this request.")
         )
 
         val viewModel = EchoViewModel(
             submitEchoUseCase = SubmitUseCase(repository)
         )
 
-        viewModel.onTextChanged("fail")
+        val events = mutableListOf<NavigationEvent>()
+
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.navigationEvents.toList(events)
+        }
+
+        viewModel.onTextChanged("This should fail")
         viewModel.onSubmitClicked()
 
         advanceUntilIdle()
@@ -60,11 +78,9 @@ class EchoViewModelTest {
         val state = viewModel.uiState.value
 
         assertNull(state.outputText)
-        assertEquals(
-            "Server validation failed. Please enter valid text.",
-            state.errorMessage
-        )
+        assertEquals("Fake server rejected this request.", state.errorMessage)
         assertFalse(state.isLoading)
+        assertEquals(listOf(NavigationEvent.NavigateToResult), events)
     }
 
     private class FakeEchoRepository(
