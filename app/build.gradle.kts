@@ -48,6 +48,7 @@ dependencies {
     implementation(libs.retrofit)
     implementation(libs.retrofit.converter)
     implementation(libs.lifecycle.compose)
+    implementation(libs.lifecycle.viewmodel)
     implementation(libs.hilt)
     ksp(libs.hilt.compiler)
     implementation(libs.androidx.activity.compose)
