@@ -19,10 +19,7 @@ data class EchoUiState(
     val outputText: String? = null,
     val errorMessage: String? = null,
     val isLoading: Boolean = false
-) {
-    val hasResult: Boolean
-        get() = outputText != null || errorMessage != null
-}
+)
 
 @HiltViewModel
 class EchoViewModel @Inject constructor(
@@ -80,16 +77,6 @@ class EchoViewModel @Inject constructor(
             }
 
             navigationChannel.send(NavigationEvent.NavigateToResult)
-        }
-    }
-
-    fun onReturnToInputClicked() {
-        _uiState.update {
-            it.copy(
-                isLoading = false,
-                outputText = null,
-                errorMessage = null
-            )
         }
     }
 }
