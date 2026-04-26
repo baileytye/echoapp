@@ -46,12 +46,22 @@ dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.material)
     implementation(libs.retrofit)
-    implementation(libs.retrofitConverter)
-    implementation(libs.lifecycleCompose)
+    implementation(libs.retrofit.converter)
+    implementation(libs.lifecycle.compose)
     implementation(libs.hilt)
-    implementation(libs.hiltCompiler)
+    ksp(libs.hilt.compiler)
+    implementation(libs.androidx.activity.compose)
+    implementation(platform(libs.androidx.compose.bom))
+    implementation(libs.androidx.compose.material3)
+    implementation(libs.androidx.compose.foundation)
+    implementation(libs.androidx.compose.ui.tooling.preview)
+
+    debugImplementation(libs.androidx.compose.ui.tooling)
+
     testImplementation(libs.junit)
-    testImplementation(libs.coroutinesTest)
+    testImplementation(libs.coroutines.test)
+
+    androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(libs.androidx.junit)
 }
