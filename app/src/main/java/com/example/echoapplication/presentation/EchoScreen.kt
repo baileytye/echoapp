@@ -56,7 +56,7 @@ fun EchoScreen(
             verticalArrangement = Arrangement.Center
         ) {
             Text(
-                text = "Text Echo",
+                text = "Echo App",
                 style = MaterialTheme.typography.headlineLarge,
                 fontWeight = FontWeight.Bold
             )
