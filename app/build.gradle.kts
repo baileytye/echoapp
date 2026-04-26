@@ -1,5 +1,8 @@
 plugins {
     alias(libs.plugins.android.application)
+    alias(libs.plugins.ksp)
+    alias(libs.plugins.compose.compiler)
+    alias(libs.plugins.hilt)
 }
 
 android {
@@ -33,13 +36,22 @@ android {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
+    buildFeatures {
+        compose = true
+    }
 }
 
 dependencies {
     implementation(libs.androidx.appcompat)
     implementation(libs.androidx.core.ktx)
     implementation(libs.material)
+    implementation(libs.retrofit)
+    implementation(libs.retrofitConverter)
+    implementation(libs.lifecycleCompose)
+    implementation(libs.hilt)
+    implementation(libs.hiltCompiler)
     testImplementation(libs.junit)
+    testImplementation(libs.coroutinesTest)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(libs.androidx.junit)
 }
