@@ -8,7 +8,6 @@ import javax.inject.Singleton
 
 @Singleton
 class CharLimitRepositoryImpl @Inject constructor() : CharLimitRepository {
-
     override suspend fun getCharLimit(): CharLimitConfig {
         delay(300L)
         return CharLimitConfig(maxLength = 150)

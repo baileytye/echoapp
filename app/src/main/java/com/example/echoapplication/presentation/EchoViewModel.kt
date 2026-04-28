@@ -2,8 +2,8 @@ package com.example.echoapplication.presentation
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.echoapplication.domain.CharLimitRepository
 import com.example.echoapplication.domain.EchoResult
-import com.example.echoapplication.domain.GetCharLimitUseCase
 import com.example.echoapplication.domain.SubmitUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
@@ -27,7 +27,7 @@ data class EchoUiState(
 @HiltViewModel
 class EchoViewModel @Inject constructor(
     private val submitEchoUseCase: SubmitUseCase,
-    private val getCharLimitUseCase: GetCharLimitUseCase
+    private val charLimitRepository: CharLimitRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(EchoUiState())
@@ -39,7 +39,7 @@ class EchoViewModel @Inject constructor(
     init {
         viewModelScope.launch {
             try {
-                val config = getCharLimitUseCase()
+                val config = charLimitRepository.getCharLimit()
                 _uiState.update { it.copy(charLimit = config.maxLength) }
             } catch (e: Exception) { }
         }
