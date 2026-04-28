@@ -22,6 +22,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
@@ -109,12 +110,23 @@ fun InputScreen(
                 enabled = !uiState.isLoading
             )
 
+            val charCount = uiState.inputText.length
+            val charLimit = uiState.charLimit
+            Text(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 4.dp),
+                text = "$charCount / $charLimit characters",
+                style = MaterialTheme.typography.labelSmall,
+                color = if (charCount < charLimit) MaterialTheme.colorScheme.error else Color.Unspecified
+            )
+
             Button(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(top = 16.dp),
                 onClick = onSubmitClicked,
-                enabled = !uiState.isLoading
+                enabled = !uiState.isLoading && !uiState.isOverLimit
             ) {
                 if (uiState.isLoading) {
                     CircularProgressIndicator()

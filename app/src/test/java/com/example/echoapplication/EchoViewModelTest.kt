@@ -1,7 +1,10 @@
 package com.example.echoapplication
 
+import com.example.echoapplication.domain.CharLimitConfig
+import com.example.echoapplication.domain.CharLimitRepository
 import com.example.echoapplication.domain.EchoRepository
 import com.example.echoapplication.domain.EchoResult
+import com.example.echoapplication.domain.GetCharLimitUseCase
 import com.example.echoapplication.domain.SubmitUseCase
 import com.example.echoapplication.presentation.EchoViewModel
 import com.example.echoapplication.presentation.NavigationEvent
@@ -14,6 +17,7 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 
@@ -30,7 +34,8 @@ class EchoViewModelTest {
         )
 
         val viewModel = EchoViewModel(
-            submitEchoUseCase = SubmitUseCase(repository)
+            submitEchoUseCase = SubmitUseCase(repository),
+            getCharLimitUseCase = GetCharLimitUseCase(FakeCharLimitRepository(150))
         )
 
         val events = mutableListOf<NavigationEvent>()
@@ -60,7 +65,8 @@ class EchoViewModelTest {
         )
 
         val viewModel = EchoViewModel(
-            submitEchoUseCase = SubmitUseCase(repository)
+            submitEchoUseCase = SubmitUseCase(repository),
+            getCharLimitUseCase = GetCharLimitUseCase(FakeCharLimitRepository(150))
         )
 
         val events = mutableListOf<NavigationEvent>()
@@ -82,6 +88,43 @@ class EchoViewModelTest {
         assertEquals(listOf(NavigationEvent.NavigateToResult), events)
     }
 
+    @Test
+    fun `char limit loads from config on init`() = runTest {
+        val viewModel = EchoViewModel(
+            submitEchoUseCase = SubmitUseCase(FakeEchoRepository(EchoResult.Success(""))),
+            getCharLimitUseCase = GetCharLimitUseCase(FakeCharLimitRepository(80))
+        )
+
+        assertEquals(0, viewModel.uiState.value.charLimit)
+    }
+
+    @Test
+    fun `isOverLimit is true when text exceeds char limit`() = runTest {
+        val viewModel = EchoViewModel(
+            submitEchoUseCase = SubmitUseCase(FakeEchoRepository(EchoResult.Success(""))),
+            getCharLimitUseCase = GetCharLimitUseCase(FakeCharLimitRepository(10))
+        )
+
+        advanceUntilIdle()
+
+        viewModel.onTextChanged("This text is definitely longer than ten characters")
+
+        assertTrue(viewModel.uiState.value.isOverLimit)
+    }
+
+    @Test
+    fun `counter increments as user types`() = runTest {
+        val viewModel = EchoViewModel(
+            submitEchoUseCase = SubmitUseCase(FakeEchoRepository(EchoResult.Success(""))),
+            getCharLimitUseCase = GetCharLimitUseCase(FakeCharLimitRepository(150))
+        )
+
+        viewModel.onTextChanged("Hello")
+
+        val state = viewModel.uiState.value
+        assertTrue(state.inputText.length > 0)
+    }
+
     private class FakeEchoRepository(
         private val result: EchoResult
     ) : EchoRepository {
@@ -93,5 +136,11 @@ class EchoViewModelTest {
             submittedText = text
             return result
         }
+    }
+
+    private class FakeCharLimitRepository(
+        private val limit: Int
+    ) : CharLimitRepository {
+        override suspend fun getCharLimit(): CharLimitConfig = CharLimitConfig(maxLength = limit)
     }
 }
