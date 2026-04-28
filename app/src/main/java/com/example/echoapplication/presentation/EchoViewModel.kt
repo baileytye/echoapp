@@ -2,6 +2,7 @@ package com.example.echoapplication.presentation
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.echoapplication.domain.CharLimitRepository
 import com.example.echoapplication.domain.EchoResult
 import com.example.echoapplication.domain.SubmitUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -18,12 +19,15 @@ data class EchoUiState(
     val inputText: String = "",
     val outputText: String? = null,
     val errorMessage: String? = null,
-    val isLoading: Boolean = false
+    val isLoading: Boolean = false,
+    val charLimit: Int = 0,
+    val isOverLimit: Boolean = false
 )
 
 @HiltViewModel
 class EchoViewModel @Inject constructor(
-    private val submitEchoUseCase: SubmitUseCase
+    private val submitEchoUseCase: SubmitUseCase,
+    private val charLimitRepository: CharLimitRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(EchoUiState())
@@ -32,18 +36,33 @@ class EchoViewModel @Inject constructor(
     private val navigationChannel = Channel<NavigationEvent>()
     val navigationEvents = navigationChannel.receiveAsFlow()
 
+    init {
+        viewModelScope.launch {
+            try {
+                val config = charLimitRepository.getCharLimit()
+                _uiState.update { it.copy(charLimit = config.maxLength) }
+            } catch (e: Exception) { }
+        }
+    }
+
     fun onTextChanged(text: String) {
+        val limit = _uiState.value.charLimit
         _uiState.update {
             it.copy(
                 inputText = text,
                 errorMessage = null,
-                outputText = null
+                outputText = null,
+                isOverLimit = text.length > limit
             )
         }
     }
 
     fun onSubmitClicked() {
         if (_uiState.value.isLoading) return
+
+        val state = _uiState.value
+        if (state.inputText.trim().isEmpty()) return
+        if (state.isOverLimit) return
 
         viewModelScope.launch {
             _uiState.update {

@@ -1,5 +1,7 @@
 package com.example.echoapplication
 
+import com.example.echoapplication.domain.CharLimitConfig
+import com.example.echoapplication.domain.CharLimitRepository
 import com.example.echoapplication.domain.EchoRepository
 import com.example.echoapplication.domain.EchoResult
 import com.example.echoapplication.domain.SubmitUseCase
@@ -30,7 +32,8 @@ class EchoViewModelTest {
         )
 
         val viewModel = EchoViewModel(
-            submitEchoUseCase = SubmitUseCase(repository)
+            submitEchoUseCase = SubmitUseCase(repository),
+            charLimitRepository = FakeCharLimitRepository(150)
         )
 
         val events = mutableListOf<NavigationEvent>()
@@ -60,7 +63,8 @@ class EchoViewModelTest {
         )
 
         val viewModel = EchoViewModel(
-            submitEchoUseCase = SubmitUseCase(repository)
+            submitEchoUseCase = SubmitUseCase(repository),
+            charLimitRepository = FakeCharLimitRepository(150)
         )
 
         val events = mutableListOf<NavigationEvent>()
@@ -82,6 +86,16 @@ class EchoViewModelTest {
         assertEquals(listOf(NavigationEvent.NavigateToResult), events)
     }
 
+    @Test
+    fun `char limit loads from config on init`() = runTest {
+        val viewModel = EchoViewModel(
+            submitEchoUseCase = SubmitUseCase(FakeEchoRepository(EchoResult.Success(""))),
+            charLimitRepository = FakeCharLimitRepository(80)
+        )
+
+        assertEquals(0, viewModel.uiState.value.charLimit)
+    }
+
     private class FakeEchoRepository(
         private val result: EchoResult
     ) : EchoRepository {
@@ -93,5 +107,11 @@ class EchoViewModelTest {
             submittedText = text
             return result
         }
+    }
+
+    private class FakeCharLimitRepository(
+        private val limit: Int
+    ) : CharLimitRepository {
+        override suspend fun getCharLimit(): CharLimitConfig = CharLimitConfig(maxLength = limit)
     }
 }
